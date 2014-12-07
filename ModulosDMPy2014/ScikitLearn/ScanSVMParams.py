@@ -274,15 +274,14 @@ def main(self,argv=sys.argv):
     print(metrics.confusion_matrix(dev_numeric_labels, predicted))
     print
     print(metrics.f1_score(dev_numeric_labels, predicted, pos_label=0))        
-    print(metrics.homogeneity_completeness_v_measure(dev_numeric_labels, predicted))
      
     print "Making 10-FCV with train+dev..."
     scores = cs.cross_val_score(model, X_all, expected_all, f1positivescore, cv=10, verbose=True)
-    print("F1score weighted: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    scores = cs.cross_val_score(model, X_all, expected_all, metrics.classification_report, cv=10, n_jobs=-1, verbose=True)
-    for score in scores:
-        print(score)
-    
+    print("F1score positive class: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     scores = cs.cross_val_score(model, X_all, expected_all, metrics.classification_report, cv=10, n_jobs=-1, verbose=True)
+#     for score in scores:
+#         print(score)
+#     
     if not os.path.isdir('Modelos'):
         os.mkdir('Modelos')
     date = time.strftime("%H%M%d%m%Y")
