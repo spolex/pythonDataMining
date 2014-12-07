@@ -184,15 +184,17 @@ def main(self,argv=sys.argv):
     f1Aux=0.0
     f1Best=0.0
     if kernel=='rbf':
-        maxD=4
+        maxD=5
     else:
         maxD=5
     #
     C_range = 10.0 ** np.arange(-3, 3)
     gamma_range = 10.0 ** np.arange(-3, 3)
-    degree_range = np.arange(3,maxD)
-
+    degree_range = np.arange(2,maxD)
+    
+    scores=[]
     for d in degree_range:#2,5
+        d_scores=[]
         for c in C_range:#-15,12
             for g in gamma_range:#-3,5
                 print("Hyperparameters: C = %r gamma = %r degree = %d...." %(c,g,d))
@@ -206,6 +208,7 @@ def main(self,argv=sys.argv):
                 predicted = model.predict(v_dev_set)
                 print "Making Hold out evaluation with dev set..."
                 f1Aux = metrics.f1_score(expected, predicted, pos_label=0)
+                d_scores.append(f1Aux)
                 print ("New F1Score = %r" %f1Aux)
                 if f1Aux>f1Best:
                     print ("Maximun F1Score = %r" %f1Aux)
@@ -214,8 +217,9 @@ def main(self,argv=sys.argv):
                     cBest = c
                     gBest = g  
                     dBest = d 
-   # Now we need to fit a classifier for all parameters in the 2d version
-# (we use a smaller set of parameters here because it  takes a while to train)
+        scores.append(d_scores)
+    # Now we need to fit a classifier for all parameters in the 2d version
+    # (we use a smaller set of parameters here because it  takes a while to train)
     C_2d_range = [1, 1e2, 1e4]
     gamma_2d_range = [1e-1, 1, 1e1]
     degree_range = [2,3]
@@ -250,6 +254,25 @@ def main(self,argv=sys.argv):
         plt.yticks(())
         plt.axis('tight')
     plt.show()
+    
+#plot the scores of the f1score
+    
+    plt.figure(figsize=(8, 6))
+    for (k,score) in enumerate(scores):
+    # draw heatmap of accuracy as a function of gamma and C   
+        score = np.array(score).reshape(len(C_range), len(gamma_range))     
+#        plt.subplots_adjust(left=0.05, right=0.95, bottom=0.15, top=0.95)
+        plt.subplot(2,len(degree_range), k + 1)
+        plt.imshow(score, interpolation='nearest', cmap=plt.cm.spectral)
+        plt.xlabel('gamma')
+        plt.ylabel('C')
+        if k % 2 != 0:
+            plt.colorbar()
+        plt.xticks(np.arange(len(gamma_range)), gamma_range, rotation=45)
+        plt.yticks(np.arange(len(C_range)), C_range)
+    plt.show()
+
+    
                                         
     #make the f1score function for the positive class
     f1positivescore=make_scorer(metrics.f1_score,pos_label=0) 
