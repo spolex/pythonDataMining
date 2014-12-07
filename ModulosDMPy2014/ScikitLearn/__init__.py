@@ -1,1 +1,1 @@
-from ScikitLearn import ScanPolinomialParams
+from ScikitLearn import ScanSVMParams
