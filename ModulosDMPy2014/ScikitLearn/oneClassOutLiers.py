@@ -4,14 +4,9 @@
 '''
 Created on 29/11/2014
 
-Novelty outlier detection
-@precondition: The 'class' must be in last position.
-
-@param train: Dataset for training One Class. 
-@param dev: Dataset for outliers detection.
-
 @author: spolex
 
+pre: La clase debe estar en última posición
 '''
 import sys
 import numpy as np
@@ -21,8 +16,6 @@ from sklearn import svm
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction import DictVectorizer
 from sklearn import preprocessing
-from sklearn.preprocessing import StandardScaler
-
 
 import arff as a
 #from sklearn.cross_validation import train_test_split
@@ -46,6 +39,23 @@ def main(self,argv=sys.argv):
     print 'LABELS FOR CLASS'
     print labels
     
+    print('Outliers data loading....')
+    datadev_set = a.load(open(argv[2],'rb'))
+    dev_labeled_set = datadev_set['data']
+    dev_set = [fila[0:len(fila)-1] for fila in dev_labeled_set]
+    
+    dev_atts = data['attributes']
+    dev_atts_names = [fila[0] for fila in dev_atts]
+    dev_att_values = [fila [1] for fila in dev_atts]
+    dev_labels = np.array(dev_att_values[len(dev_att_values)-1])
+    
+    print 'DEV DATA SAMPLES'
+    print len(dev_set)
+    print 'DEV Attributes NUM'
+    print len(dev_atts_names)
+    print 'LABELS FOR POSITIVE CLASS'
+    print dev_labels[0]
+    
 # #    parse a un dict para poder vectorizar los att categoricos
     print ('Parsing categorical data...')
     dict_list = []
@@ -56,6 +66,15 @@ def main(self,argv=sys.argv):
             feature = atts_names[f]
             d[feature] = train_set[n][f]
         dict_list.append(d)
+        
+    dev_dict_list = []
+    N,F = len(dev_set),len(dev_set[0])
+    for n in range(N):
+        d = {}
+        for f in range(F):
+            feature = dev_atts_names[f]
+            d[feature] = dev_set[n][f]
+        dev_dict_list.append(d)
 # 
 # #    Para convertir los datos categoricos que NO pueden ser utilizados
 # #    por el clasificador en numericos convertir las instancias en un
@@ -68,7 +87,12 @@ def main(self,argv=sys.argv):
     for i in range(1,len(dict_list)):
         train_set_instance = v.fit_transform(dict_list[i],)
         v_train_set = np.vstack((v_train_set,train_set_instance))
-        
+    
+    v_dev_set = v.fit_transform(dev_dict_list[0])
+    for j in range(1,len(dev_dict_list)):   
+        v_dev_set_instance = v.fit_transform(dev_dict_list[j])        
+        v_dev_set = np.vstack((v_dev_set,v_dev_set_instance))
+                
 #Split for obtain set for train an another test for novelty detection
 #    v_train_set,v_train_set_test = train_test_split(v_train_set,test_size=0.33, random_state=42)
     
@@ -82,19 +106,28 @@ def main(self,argv=sys.argv):
     le = preprocessing.LabelEncoder()    
     le.fit(train_set_labels)
     
+    dev_set_labels=[]
+    for fila in dev_labeled_set:
+        dev_set_labels.append(fila[-1])
+    le = preprocessing.LabelEncoder()    
+    le.fit(dev_set_labels)    
     
 #dataset for decision function visualization
     train_numeric_labels = le.transform(train_set_labels)
     X_2d = v_train_set[:, -2:]
     Y_2d = train_numeric_labels
-    
+    dev_numeric_labels=le.transform(dev_set_labels)
+    X_dev_2d = v_dev_set[:, -2:]
+    Y_dev_2d = dev_numeric_labels
 # It is usually a good idea to scale the data for SVM training.
 # We are cheating a bit in this example in scaling all of the data,
 # instead of fitting the transformation on the training set and
 # just applying it on the test set.
     scaler = preprocessing.StandardScaler()
     v_train_set = scaler.fit_transform(v_train_set)
+    v_dev_set = scaler.fit_transform(v_dev_set)
     X_2d = scaler.fit_transform(X_2d)
+    X_dev_2d = scaler.fit_transform(X_dev_2d)
 
 #train classifier
 #     print('Training OneClassSVM...')
@@ -115,6 +148,7 @@ def main(self,argv=sys.argv):
 # visualize decision function for these parameters.
     plt.pcolormesh(xx, yy, Z, cmap=plt.cm.jet)
     plt.scatter(X_2d[:, 0], X_2d[:, 1], c=Y_2d,cmap=plt.cm.jet)
+    plt.scatter(X_dev_2d[:, 0], X_dev_2d[:, 1], c=Y_dev_2d,cmap=plt.cm.jet)
     plt.xticks()
     plt.yticks()
     plt.axis('tight')
