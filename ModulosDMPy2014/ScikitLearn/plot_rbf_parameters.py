@@ -49,7 +49,6 @@ import sys
 import matplotlib.pyplot as plt
 
 from sklearn.svm import SVC
-from sklearn.preprocessing import StandardScaler
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 import arff as a
