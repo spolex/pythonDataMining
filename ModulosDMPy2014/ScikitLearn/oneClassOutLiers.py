@@ -4,6 +4,12 @@
 '''
 Created on 29/11/2014
 
+Novelty outlier detection
+@precondition: The 'class' must be in last position.
+
+@param train: Dataset for training One Class. 
+@param dev: Dataset for outliers detection.
+
 @author: spolex
 
 '''

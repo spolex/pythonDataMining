@@ -51,7 +51,6 @@ from sklearn import metrics
 from sklearn import cross_validation as cs
 from sklearn.externals import joblib as jl 
 from sklearn.metrics.scorer import make_scorer
-from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
 
@@ -70,38 +69,36 @@ def main(self,argv=sys.argv):
     print('Training data loading....')
     data = arff.load(open(argv[1],'rb'))
     labeled_set = data['data']
-    train_set = np.asarray([fila[0:len(fila)-1] for fila in labeled_set])
-    train_set_labels = np.asarray([fila[-1] for fila in labeled_set])
+    train_set = [fila[0:len(fila)-1] for fila in labeled_set]
     
     atts = data['attributes']
     atts_names = [fila[0] for fila in atts]
     att_values = [fila [1] for fila in atts]
     labels = np.array(att_values[len(att_values)-1])
     
-    print 'TRAIN DATA SHAPE'
-    print train_set.shape
+    print 'TRAIN DATA SAMPLES'
+    print len(train_set)
     print 'Attributes NUM'
     print len(atts_names)
-    print 'LABELS FOR CLASS'
-    print labels
+    print 'LABELS FOR POSITIVE CLASS'
+    print labels[0]
     
     print('Develop data loading....')
     datadev_set = arff.load(open(argv[2],'rb'))
     dev_labeled_set = datadev_set['data']
-    dev_set = np.asarray([fila[0:len(fila)-1] for fila in dev_labeled_set])
-    dev_set_labels = np.asarray([fila[-1] for fila in dev_labeled_set])
+    dev_set = [fila[0:len(fila)-1] for fila in dev_labeled_set]
     
     dev_atts = data['attributes']
     dev_atts_names = [fila[0] for fila in dev_atts]
     dev_att_values = [fila [1] for fila in dev_atts]
     dev_labels = np.array(dev_att_values[len(dev_att_values)-1])
     
-    print 'DEV DATA SHAPE'
-    print dev_set.shape
+    print 'DEV DATA SAMPLES'
+    print len(dev_set)
     print 'DEV Attributes NUM'
     print len(dev_atts_names)
-    print 'LABELS FOR DEV CLASS'
-    print dev_labels
+    print 'LABELS FOR POSITIVE DEV CLASS'
+    print dev_labels[0]
     
 ####    
     print ('Preprocesing data...')
@@ -109,26 +106,26 @@ def main(self,argv=sys.argv):
     print ('Parsing categorical data...')
 
     dict_list = []
-    N,F = train_set.shape
+    N,F = len(train_set),len(train_set[0])
     for n in range(N):
         d = {}
         for f in range(F):
             feature = atts_names[f]
-            d[feature] = train_set[n,f]
+            d[feature] = train_set[n][f]
         dict_list.append(d)
         
     dev_dict_list = []
-    N,F = dev_set.shape
+    N,F = len(dev_set),len(dev_set[0])
     for n in range(N):
         d = {}
         for f in range(F):
             feature = dev_atts_names[f]
-            d[feature] = dev_set[n,f]
+            d[feature] = dev_set[n][f]
         dev_dict_list.append(d)
     
     
     #Fit vectorizer for each dict
-    v = DictVectorizer(sparse=False,dtype=np.float16)
+    v = DictVectorizer(sparse=False,dtype=np.float64)
     
     v_train_set = v.fit_transform(dict_list[0])
     for i in range(1,len(dict_list)):
@@ -144,15 +141,28 @@ def main(self,argv=sys.argv):
     v_dev_set = np.asarray(v_dev_set)
             
     # # transform non-numerical labels to numerical
+    # # transform non-numerical labels to numerical
+    train_set_labels=[]
+    for fila in labeled_set:
+        train_set_labels.append(fila[-1])
     le = preprocessing.LabelEncoder()    
     le.fit(train_set_labels)
-    train_numeric_labels = le.transform(train_set_labels)
+    
+    dev_set_labels=[]
+    for fila in dev_labeled_set:
+        dev_set_labels.append(fila[-1])
+    le = preprocessing.LabelEncoder()    
     le.fit(dev_set_labels)
-    dev_numeric_labels = le.transform(dev_set_labels)
+    
     
     #dataset for decision function visualization
+    train_numeric_labels=le.transform(train_set_labels);
     X_2d = v_train_set[:, -2:]
     Y_2d = train_numeric_labels
+    
+    dev_numeric_labels=le.transform(dev_set_labels)
+    X_dev_2d = v_dev_set[:, -2:]
+    Y_dev_2d = dev_numeric_labels
     
     # It is usually a good idea to scale the data for SVM training.
     # We are cheating a bit in this example in scaling all of the data,
@@ -160,40 +170,31 @@ def main(self,argv=sys.argv):
     # just applying it on the test set.
     scaler = preprocessing.StandardScaler()
     v_train_set = scaler.fit_transform(v_train_set)
+    v_dev_set = scaler.fit_transform(v_dev_set)
     X_2d = scaler.fit_transform(X_2d)
+    X_dev_2d = scaler.fit_transform(X_dev_2d)
 
-# It is usually a good idea to scale the data for SVM training.
-# We are cheating a bit in this example in scaling all of the data,
-# instead of fitting the transformation on the training set and
-# just applying it on the test set.
-
-    scaler = StandardScaler()
-
-    v_train_set = scaler.fit_transform(v_train_set)
-    X_2d = scaler.fit_transform(X_2d)
 #########    
 #Training the models
 ##########
     cBest = 0.
     gBest = 0.  
     dBest = 0.  
-    print('Start scaning data for s% kernel....' %kernel)
+    print('Start scaning data for %s kernel....' %(kernel))
     f1Aux=0.0
     f1Best=0.0
     if kernel=='rbf':
-        maxD=3
+        maxD=4
     else:
         maxD=5
     #
-    C_range = 10.0 ** np.arange(-3, 3)
-    gamma_range = 10.0 ** np.arange(-3, 3)
-    degree_range = np.arange(0,maxD)
+    C_range = 10.0 ** np.arange(1, 3)
+    gamma_range = 10.0 ** np.arange(0, 3)
+    degree_range = np.arange(3,maxD)
 
     for d in degree_range:#2,5
-        for i in C_range:#-15,12
-            c=2**i
-            for j in gamma_range:#-3,5
-                g=2**j
+        for c in C_range:#-15,12
+            for g in gamma_range:#-3,5
                 print("Hyperparameters: C = %r gamma = %r degree = %d...." %(c,g,d))
                 #   fit the model 
              
@@ -217,7 +218,7 @@ def main(self,argv=sys.argv):
     # (we use a smaller set of parameters here because it  takes a while to train)
     C_2d_range = [1, 1e2, 1e4]
     gamma_2d_range = [1e-1, 1, 1e1]
-    degree_2d_range = [0,2,3]
+    degree_2d_range = [3]
     classifiers = []
     for D in degree_2d_range:
         for C in C_2d_range:
@@ -249,6 +250,7 @@ def main(self,argv=sys.argv):
         plt.xticks(())
         plt.yticks(())
         plt.axis('tight')
+    plt.show()
                                         
     #make the f1score function for the positive class
     f1positivescore=make_scorer(metrics.f1_score,pos_label=0) 
@@ -260,12 +262,12 @@ def main(self,argv=sys.argv):
     expected_all = np.concatenate((train_numeric_labels,dev_numeric_labels), axis=0)
     
     print('Start Dis-honest evaluation with train for test')
-    model = svm.SVC(kernel='rbf', gamma=gBest, coef0=cBest, degree=dBest).fit(v_train_set, train_numeric_labels, sample_weight=None)   
+    model = svm.SVC(kernel=kernel, gamma=gBest, C=cBest, degree=dBest).fit(v_train_set, train_numeric_labels, sample_weight=None)   
     predicted = model.predict(v_train_set) 
     print(metrics.classification_report(train_numeric_labels, predicted, labels=None))
     
     print('Start Hold-Hout evaluation with train ,dev for test')
-    model = svm.SVC(kernel='rbf', gamma=gBest, coef0=cBest, degree=dBest).fit(v_train_set, train_numeric_labels, sample_weight=None)   
+    model = svm.SVC(kernel=kernel, gamma=gBest, coef0=cBest, degree=dBest).fit(v_train_set, train_numeric_labels, sample_weight=None)   
     predicted = model.predict(v_dev_set) 
                 #     make predictions
     print(metrics.classification_report(dev_numeric_labels, predicted, labels=None))
@@ -275,7 +277,7 @@ def main(self,argv=sys.argv):
     print(metrics.homogeneity_completeness_v_measure(dev_numeric_labels, predicted))
      
     print "Making 10-FCV with train+dev..."
-    scores = cs.cross_val_score(model, X_all, expected_all, metrics.f1_score, cv=10, n_jobs=-1, verbose=True)
+    scores = cs.cross_val_score(model, X_all, expected_all, f1positivescore, cv=10, verbose=True)
     print("F1score weighted: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
     scores = cs.cross_val_score(model, X_all, expected_all, metrics.classification_report, cv=10, n_jobs=-1, verbose=True)
     for score in scores:

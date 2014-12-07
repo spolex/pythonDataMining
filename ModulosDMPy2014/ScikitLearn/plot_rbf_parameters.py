@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 ========================================
 RBF SVM parameters with Grid Search Scan
@@ -125,25 +127,7 @@ def main(self,argv=sys.argv):
     scaler = preprocessing.StandardScaler()
     v_train_set = scaler.fit_transform(v_train_set)
     X_2d = scaler.fit_transform(X_2d)
-#     iris = load_iris()
-#     X = iris.data
-#     Y = iris.target
-# 
-#      dataset for decision function visualization
-#     X_2d = X[:, :2]
-#     X_2d = X_2d[Y > 0]
-#     Y_2d = Y[Y > 0]
-#     Y_2d -= 1
-
-# It is usually a good idea to scale the data for SVM training.
-# We are cheating a bit in this example in scaling all of the data,
-# instead of fitting the transformation on the training set and
-# just applying it on the test set.
-
-    scaler = StandardScaler()
-
-    v_train_set = scaler.fit_transform(v_train_set)
-    X_2d = scaler.fit_transform(X_2d)
+    
 
 ##############################################################################
 # Train classifier
