@@ -147,8 +147,9 @@ def main(self,argv=sys.argv):
     Z = Z.reshape(xx.shape)
 # visualize decision function for these parameters.
     plt.pcolormesh(xx, yy, Z, cmap=plt.cm.jet)
-    plt.scatter(X_2d[:, 0], X_2d[:, 1], c=Y_2d,cmap=plt.cm.jet)
-    plt.scatter(X_dev_2d[:, 0], X_dev_2d[:, 1], c=Y_dev_2d,cmap=plt.cm.jet)
+    plt.scatter(X_2d[:, 0][Y_2d == 1], X_2d[:, 1][Y_2d==1], c=['green'],marker='s')
+    plt.scatter(X_2d[:, 0][Y_2d == 0], X_2d[:, 1][Y_2d==0], c=['red'],marker='^')
+    plt.scatter(X_dev_2d[:, 0], X_dev_2d[:, 1], c='white')
     plt.xticks()
     plt.yticks()
     plt.axis('tight')
