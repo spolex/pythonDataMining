@@ -188,8 +188,8 @@ def main(self,argv=sys.argv):
     else:
         maxD=5
     #
-    C_range = 10.0 ** np.arange(1, 3)
-    gamma_range = 10.0 ** np.arange(0, 3)
+    C_range = 10.0 ** np.arange(-3, 3)
+    gamma_range = 10.0 ** np.arange(-3, 3)
     degree_range = np.arange(3,maxD)
 
     for d in degree_range:#2,5
@@ -214,25 +214,24 @@ def main(self,argv=sys.argv):
                     cBest = c
                     gBest = g  
                     dBest = d 
-    # Now we need to fit a classifier for all parameters in the 2d version
-    # (we use a smaller set of parameters here because it  takes a while to train)
+   # Now we need to fit a classifier for all parameters in the 2d version
+# (we use a smaller set of parameters here because it  takes a while to train)
     C_2d_range = [1, 1e2, 1e4]
     gamma_2d_range = [1e-1, 1, 1e1]
-    degree_2d_range = [3]
+    degree_range = [2,3]
     classifiers = []
-    for D in degree_2d_range:
+    for D in degree_range:
         for C in C_2d_range:
             for gamma in gamma_2d_range:
-                clf = svm.SVC(kernel=kernel, gamma=g, C=c, degree=D)
+                clf = svm.SVC(C=C, gamma=gamma, degree=D)
                 clf.fit(X_2d, Y_2d)
-                classifiers.append((C, gamma, clf))  
-                
-    
-    ##############################################################################
+                classifiers.append((C, gamma, clf))
+
+##############################################################################
 # visualization
 #
 # draw visualization of parameter effects
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 8))
     xx, yy = np.meshgrid(np.linspace(-5, 5, 200), np.linspace(-5, 5, 200))
     for (k, (C, gamma, clf)) in enumerate(classifiers):
     # evaluate decision function in a grid
@@ -240,8 +239,8 @@ def main(self,argv=sys.argv):
         Z = Z.reshape(xx.shape)
 
     # visualize decision function for these parameters
-        plt.subplot(len(C_2d_range), len(gamma_2d_range), k + 1)
-        plt.title("gamma 10^%d, C 10^%d" % (np.log10(gamma), np.log10(C)),
+        plt.subplot(len(C_2d_range)*len(degree_range), len(gamma_2d_range), k + 1)
+        plt.title("g 10^%d, C 10^%d, d %r" % (np.log10(gamma), np.log10(C), clf.degree),
                   size='medium')
 
     # visualize parameter's effect on decision function
